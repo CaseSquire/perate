@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página de Ventas</title>
+    <link rel="stylesheet" href="styles.css">
+  
+</head>
+<body>
+   
+ <main>
+    <input type="hidden" id="current-section" value="inicio">
+    <button class="toggle-button" aria-label="Abrir menú" onclick="toggleSidebar()">&#9776;</button>
+
+    <div class="sidebar" id="sidebar">
+        <div class="dropdown">
+            <div class="dropdown-header" id="user-button" onclick="toggleDropdown()">Usuario</div>
+            <div class="dropdown-content" id="user-info">
+                <p id="user-name"></p>
+                
+           
+<p id="user-email"></p>
+                <p id="user-password"></p> <!-- Contraseña añadida -->
+                <button id="logout-button" onclick="logout()">Cerrar sesión</button>
+            </div>
+        
+        
+</div>
+    </div>
+
+   <section id="register" style="display: none;">
+        <h1>Crear Cuenta</h1>
+        <form id="register-form" class="form">
+            <input type="text" placeholder="Nombre" required>
+            <input type="email" placeholder="Correo" required>
+            <input type="password" placeholder="Contraseña" required>
+            <label>
+                <input type="checkbox" id="remember-me"> Mantener sesión iniciada
+            </label>
+            <button type="submit" class="submit-button">Crear Cuenta</button>
+            
+  
+<p class="error-message" id="register-error-message" style="display: none;"></p>
+        
+     
+</form>
+        <p>¿Ya tienes una cuenta? <a href="#" id="show-login">Iniciar sesión</a></p>
+    </section>
+
+  
+    <section id="login" style="display: block;">
+        <h1>Iniciar Sesión</h1>
+        <form id="login-form" class="form">
+            
+   
+<input type="email" placeholder="Correo" required>
+            <input type="password" placeholder="Contraseña" required>
+            <label>
+                <input type="checkbox" id="remember-me-login"> Mantener sesión iniciada
+            
+            
+</label>
+            <button type="submit" class="submit-button">Iniciar Sesión</button>
+            <p class="error-message" id="login-error-message" style="display: none;"></p>
+        </form>
+        <p>¿No tienes una cuenta? <a href="#" id="show-register">Regístrate</a></p>
+    </section>
+
+     <section id="dashboard" style="display: none;">
+        <h2> Bienvenido</h2>
+        <button id="make-order-button" class="order-button" style="display: none;" onclick="showOrderOptions()">Hacer un Pedido</button>
+    </section>
+
+
+      <section id="order-options" style="display: none;">
+        <h2 style="text-align: center;">Selecciona una Opción</h2>
+        <div class="options-container">
+            <button id="impresion-button" class="option-button" onclick="showImpresion()">Impresión</button>
+            <button id="utiles-button" class="option-button">Útiles</button>
+            <button id="papeleria-button" class="option-button">Papelería</button>
+        </div>
+        <h2 style="text-align: center;">Carrito de Pedidos</h2>
+        <ul id="order-list" class="order-list"></ul>
+        <div id="total-price-order-options" class="total-price">Precio Total: $0.00</div>
+    </section>
+
+    <div id="opciones" style="display: none;">
+        <button id="enviarPedido" style="font-size: 20px; padding: 15px 30px; margin-bottom: 20px;" onclick="enviarPedido()">Enviar Pedido</button>
+        <div id="carrito">
+            <!-- Aquí irían los productos del carrito -->
+        </div>
+    </div>
+
+     <section id="impresion" style="display: none;">
+        <h1 style="text-align: center;">Agregar Imágenes/Texto para Imprimir</h1>
+        <div class="form-container" style="border: 2px solid #FFA500; padding: 20px; border-radius: 10px;">
+            <textarea id="paste-area" placeholder="Descripción de la impresión..." style="width: 100%; height: 100px; border-radius: 5px; padding: 10px;"></textarea>
+            <button id="upload-button" style="margin-top: 10px; padding: 10px; background-color: #FFA500; color: white; border: none; border-radius: 5px;" onclick="document.getElementById('image-upload').click()">Cargar Imágenes</button>
+            <input type="file" id="image-upload" multiple accept="image/*" style="display: none;" onchange="previewImages()">
+            
+            <div id="image-preview-container" style="margin-top: 10px; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; border-radius: 5px;"></div>
+            
+            <h2 style="text-align: center;">Añadir todas las imágenes juntas</h2>
+            <div style="text-align: center;">
+                <button id="add-order-btn" type="button" style="margin-top: 20px; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 5px;" onclick="addToOrder()">Añadir al Pedido</button>
+            </div>
+        </div>
+        <div class="total-price" id="total-price">Precio Total: $0</div>
+    </section>
+</main>
+
+    <script src="script.js"></script>
+<script>
+
+    console.log("addToOrder function called");
+    let isLoggedIn = false;
+
+    // Almacenar el estado de la sesión
+    const isLoggedInKey = "isLoggedIn";
+    const currentUserKey = "currentUser";
+    const rememberedUserKey = "rememberedUser";
+
+    // Función para manejar la opción de "Mantener sesión iniciada"
+    function handleRememberMe(user) {
+        const rememberMe = document.getElementById("remember-me-login").checked;
+        if (rememberMe) {
+            localStorage.setItem(rememberedUserKey, JSON.stringify({ email: user.email, password: user.password }));
+        } else {
+            localStorage.removeItem(rememberedUserKey);
+        }
+    }
+
+    // Mostrar formulario de inicio de sesión
+    function showLoginForm() {
+        document.querySelector(".toggle-button").style.display = 'none';
+        document.getElementById("login").style.display = "block";
+        document.getElementById("register").style.display = "none";
+    }
+
+    // Función para iniciar sesión
+    function loginUser(email, password) {
+        const users = JSON.parse(localStorage.getItem('users')) || [];
+        const user = users.find(user => user.email === email && user.password === password);
+
+        if (user) {
+            isLoggedIn = true;
+            localStorage.setItem(isLoggedInKey, "true");
+            localStorage.setItem(currentUserKey, JSON.stringify({ email: user.email, name: user.name }));
+            handleRememberMe(user);
+            displayUserInfo(user);
+        } else {
+            displayError("Credenciales incorrectas", "login-error-message");
+        }
+    }
+
+    // Mostrar información del usuario
+    function displayUserInfo(user) {
+        document.querySelector(".toggle-button").style.display = 'block';
+        document.querySelector(".sidebar").classList.add('open');
+        document.getElementById("dashboard").style.display = "block";
+        document.getElementById("login").style.display = "none";
+        document.getElementById("register").style.display = "none";
+        document.getElementById("make-order-button").style.display = "block";
+        document.getElementById("user-name").innerText = `Nombre: ${user.name}`;
+        document.getElementById("user-email").innerText = `Email: ${user.email}`;
+    }
+
+    // Función para manejar el registro
+    function register(event) {
+        event.preventDefault();
+        const nameInput = document.querySelector("#register-form input[type='text']").value;
+        const emailInput = document.querySelector("#register-form input[type='email']").value;
+        const passwordInput = document.querySelector("#register-form input[type='password']").value;
+        const existingUsers = JSON.parse(localStorage.getItem('users')) || [];
+
+        // Validación de existencia de usuario
+        const emailExists = existingUsers.some(user => user.email === emailInput);
+        const nameExists = existingUsers.some(user => user.name === nameInput);
+
+        if (emailExists) {
+            displayError("Correo ya registrado", "register-error-message");
+            return;
+        }
+        if (nameExists) {
+            displayError("Nombre ya registrado", "register-error-message");
+            return;
+        }
+        if (passwordInput.length < 8 || !/\d/.test(passwordInput)) {
+            displayError("La contraseña debe tener al menos 8 dígitos y contener números", "register-error-message");
+            return;
+        }
+
+        const newUser = { name: nameInput, email: emailInput, password: passwordInput };
+        existingUsers.push(newUser);
+        localStorage.setItem('users', JSON.stringify(existingUsers));
+
+        alert("Cuenta creada con éxito. Ahora puedes iniciar sesión.");
+        document.getElementById("show-login").click(); // Muestra la opción de inicio de sesión
+    }
+
+    // Función para cerrar sesión
+    function logout() {
+        isLoggedIn = false;
+        document.querySelector(".toggle-button").style.display = 'none';
+        document.querySelector(".sidebar").classList.remove('open');
+        document.getElementById("dashboard").style.display = "none";
+        document.getElementById("login").style.display = "block";
+        document.getElementById("register").style.display = "none";
+        localStorage.removeItem(rememberedUserKey);
+        document.querySelector("#login-form").reset();
+        document.getElementById("user-name").innerText = '';
+        document.getElementById("user-email").innerText = '';
+        localStorage.removeItem(isLoggedInKey);
+        localStorage.removeItem(currentUserKey);
+        showLoginForm();
+    }
+
+    // Función para mostrar y ocultar la barra lateral
+    function toggleSidebar() {
+        const sidebar = document.querySelector(".sidebar");
+        sidebar.classList.toggle('open');
+    }
+
+    function toggleDropdown() {
+        const dropdownContent = document.querySelector(".dropdown-content");
+        dropdownContent.classList.toggle("open");
+    }
+
+    function displayError(message, elementId) {
+        const errorElement = document.getElementById(elementId);
+        errorElement.innerText = message;
+        errorElement.style.display = "block";
+    }
+
+    // Manejo de eventos para formularios
+    document.getElementById("register-form").onsubmit = register;
+    document.getElementById("login-form").onsubmit = function(event) {
+        event.preventDefault();
+        const emailInput = document.querySelector("#login-form input[type='email']").value;
+        const passwordInput = document.querySelector("#login-form input[type='password']").value;
+        loginUser(emailInput, passwordInput);
+    };
+
+    // Lógica de cambio entre formulario de inicio de sesión y registro
+    document.getElementById("show-login").onclick = function() {
+        document.getElementById("register").style.display = "none";
+        document.getElementById("login").style.display = "block";
+    };
+
+    document.getElementById("show-register").onclick = function() {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("register").style.display = "block";
+    };
+
+    // Inicializa el estado al cargar la página
+    window.onload = function() {
+        const isLoggedIn = localStorage.getItem(isLoggedInKey) === "true";
+        const currentUser = JSON.parse(localStorage.getItem(currentUserKey));
+
+        if (isLoggedIn && currentUser) {
+            displayUserInfo(currentUser);
+        } else {
+            showLoginForm();
+        }
+
+        const rememberedUser = JSON.parse(localStorage.getItem(rememberedUserKey));
+        if (rememberedUser) {
+            document.querySelector("#login-form input[type='email']").value = rememberedUser.email;
+            document.querySelector("#login-form input[type='password']").value = rememberedUser.password;
+            document.getElementById("remember-me-login").checked = true;
+        }
+    };
+
+    // Manejo del evento de cierre de sesión
+    document.getElementById("logout-button").onclick = logout;
+
+    // Inicializa el botón de usuario para mostrar los datos
+    document.getElementById("user-button").onclick = toggleDropdown;
+
+    // Cierra el dropdown si se hace clic fuera de él
+    document.addEventListener("click", function (event) {
+        const dropdownContent = document.querySelector(".dropdown-content");
+        const toggleButton = document.getElementById("user-button");
+        if (!toggleButton.contains(event.target) && !dropdownContent.contains(event.target)) {
+            dropdownContent.classList.remove("open");
+        }
+    });
+
+// Maneja la visualización de las opciones de pedido y la sección de impresión
+function showOrderOptions() {
+    document.getElementById("dashboard").style.display = "none";
+    document.getElementById("order-options").style.display = "block";
+    document.getElementById("impresion").style.display = "none"; // Oculta la sección de impresión
+	 document.getElementById('opciones').style.display = 'block';
+}
+
+function showImpresion() {
+    document.getElementById("order-options").style.display = "none";
+    document.getElementById("impresion").style.display = "block"; // Muestra la sección de impresión
+}
+
+// Variables de imagen y precio
+const imageUpload = document.getElementById('image-upload');
+const imagePreviewContainer = document.getElementById('image-preview-container');
+const totalPriceElement = document.getElementById('total-price');
+let totalPrice = 0;
+
+// Previsualización de imágenes y cálculo de precios
+function previewImages(event) {
+    const files = event.target.files;
+    imagePreviewContainer.innerHTML = ''; // Limpia el contenedor al inicio
+    totalPrice = 0; // Reinicia el precio total
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+
+            // Crear contenedor para vista previa
+            const previewDiv = document.createElement('div');
+            previewDiv.classList.add('image-preview');
+
+            // Botón de eliminar
+            const removeButton = document.createElement('button');
+            removeButton.textContent = 'Eliminar';
+            removeButton.addEventListener('click', function() {
+                previewDiv.remove(); // Elimina vista previa de imagen
+                updateTotalPrice(); // Actualiza el total después de eliminar
+            });
+
+            // Inputs de opciones de color y blanco y negro como botones de radio
+            const colorInput = document.createElement('input');
+            colorInput.type = 'radio';
+            colorInput.name = `color-type-${i}`; // Nombre único para cada imagen
+            colorInput.value = 'color';
+            colorInput.addEventListener('change', updateTotalPrice); // Actualiza total al cambiar
+            const colorLabel = document.createElement('label');
+            colorLabel.textContent = 'Color';
+
+            const bwInput = document.createElement('input');
+            bwInput.type = 'radio';
+            bwInput.name = `color-type-${i}`; // Misma agrupación para seleccionar solo uno
+            bwInput.value = 'bw';
+            bwInput.addEventListener('change', updateTotalPrice); // Actualiza total al cambiar
+            const bwLabel = document.createElement('label');
+            bwLabel.textContent = 'Blanco y Negro';
+
+            // Añadir elementos al contenedor de vista previa
+            previewDiv.append(img, removeButton, colorInput, colorLabel, bwInput, bwLabel);
+            imagePreviewContainer.appendChild(previewDiv);
+        };
+
+        reader.readAsDataURL(file);
+    }
+}
+
+// Actualización del precio total
+function updateTotalPrice() {
+    const colorInputs = document.querySelectorAll('input[value="color"]:checked');
+    const bwInputs = document.querySelectorAll('input[value="bw"]:checked');
+    totalPrice = 0;
+
+    // Sumar precios de las imágenes seleccionadas en color
+    colorInputs.forEach(() => {
+        totalPrice += 20;
+    });
+
+    // Sumar precios de las imágenes seleccionadas en blanco y negro
+    bwInputs.forEach(() => {
+        totalPrice += 10;
+    });
+
+    totalPriceElement.innerText = `Precio Total: $${totalPrice}`;
+}
+
+let orderList = []; // Array para almacenar los pedidos
+
+function addToOrder() {
+    const pasteArea = document.getElementById("paste-area").value;
+    const colorInputs = document.querySelectorAll('input[value="color"]:checked');
+    const bwInputs = document.querySelectorAll('input[value="bw"]:checked');
+
+    if (!pasteArea) {
+        alert("Por favor, ingresa una descripción de la impresión.");
+        return;
+    }
+
+    if (colorInputs.length === 0 && bwInputs.length === 0) {
+        alert("Por favor, selecciona al menos una opción de color o blanco y negro para cada imagen.");
+        return;
+    }
+
+    let description = `Descripción: ${pasteArea}\n`;
+    let totalPrice = 0; // Inicializar el precio total
+
+    // Descripción de cada imagen según selección
+    document.querySelectorAll('.image-preview').forEach((preview, index) => {
+        const colorOption = preview.querySelector('input[value="color"]:checked');
+        const bwOption = preview.querySelector('input[value="bw"]:checked');
+
+        if (colorOption) {
+            description += `Imagen ${index + 1}: Color - Precio: $20\n`;
+            totalPrice += 20; // Sumar el precio
+        } else if (bwOption) {
+            description += `Imagen ${index + 1}: Blanco y Negro - Precio: $10\n`;
+            totalPrice += 10; // Sumar el precio
+        }
+    });
+
+    // Añadir el pedido con descripción y precio total si el total es mayor a 0
+    if (totalPrice > 0) {
+        const orderItem = { description: description, totalPrice: totalPrice };
+        orderList.push(orderItem); // Agregar el pedido al array
+        updateOrderList(); // Actualizar la lista visualmente
+
+        // Redirigir a la sección de pedidos
+        document.getElementById("order-options").style.display = "block";
+        document.getElementById("impresion").style.display = "none";
+    } else {
+        alert("Por favor, selecciona al menos una opción de color o blanco y negro para cada imagen.");
+    }
+}
+
+function updateOrderList() {
+    const orderListElement = document.getElementById("order-list");
+    orderListElement.innerHTML = ''; // Limpiar la lista actual
+
+    orderList.forEach((item, index) => {
+        const listItem = document.createElement("li");
+        listItem.innerText = `${item.description} Precio Total: $${item.totalPrice}`;
+
+        // Botón para eliminar el pedido
+        const deleteButton = document.createElement("button");
+        deleteButton.innerText = "Eliminar";
+        deleteButton.onclick = () => removeFromOrder(index); // Llama a la función de eliminación
+        listItem.appendChild(deleteButton);
+
+        orderListElement.appendChild(listItem);
+    });
+}
+
+// Función para eliminar un pedido del carrito
+function removeFromOrder(index) {
+    // Verifica que el índice sea válido
+    if (index >= 0 && index < orderList.length) {
+        orderList.splice(index, 1); // Elimina el pedido del array
+        updateOrderList(); // Actualiza la lista visualmente
+    } else {
+        console.error("Índice fuera de rango: ", index);
+    }
+}
+
+// Función para limpiar los campos de impresión
+function clearInputFields() {
+    document.getElementById("paste-area").value = ""; // Limpiar la descripción
+    document.querySelectorAll('input[type="checkbox"]:checked').forEach(input => {
+        input.checked = false; // Desmarcar las opciones
+    });
+    
+    // Limpiar la vista previa de las imágenes (suponiendo que hay un contenedor para esto)
+    const imagePreviewContainer = document.getElementById("image-preview-container");
+    if (imagePreviewContainer) {
+        imagePreviewContainer.innerHTML = ""; // Limpiar la vista previa de las imágenes
+    }
+}
+
+// Función para navegar a la sección de impresión
+function goToImpresion() {
+    clearInputFields(); // Limpiar los campos
+    document.getElementById("impresion").style.display = "block"; // Mostrar la sección de impresión
+    document.getElementById("order-options").style.display = "none"; // Ocultar las opciones de pedido
+}
+
+
+
+// Evento para previsualizar imágenes al cargar archivos
+imageUpload.addEventListener('change', previewImages);
+
+
+
+function enviarPedido() {
+    const orderList = document.getElementById('order-list');
+    
+    // Verifica si hay elementos en el carrito
+    if (orderList.children.length === 0) {
+        alert("Tu carrito está vacío. Por favor, añade productos antes de enviar el pedido.");
+        return;
+    }
+    
+    const images = [];
+    
+    // Recopilar las imágenes del contenedor de vista previa
+    const imagePreviewContainer = document.getElementById('image-preview-container');
+    const previews = imagePreviewContainer.querySelectorAll('img');
+    
+    previews.forEach(img => {
+        images.push(img.src); // Obtener la URL de cada imagen
+    });
+
+    // Crear un mensaje con las URLs de las imágenes
+    const message = "Aquí están mis imágenes para el pedido:\n" + images.join('\n');
+    
+    // URL encode el mensaje
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Cambia '1234567890' por el número de WhatsApp al que quieres enviar
+    const phoneNumber = '8295469638'; 
+    const whatsappURL = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+
+    // Abrir WhatsApp
+    window.open(whatsappURL, '_blank');
+}
+    function mostrarOpciones() {
+    document.getElementById("order-options").style.display = "block"; // Mostrar la sección de opciones
+    document.getElementById("opciones").style.display = "block"; // Mostrar el div de opciones
+   }
+</script>
+</body>
+</html>
